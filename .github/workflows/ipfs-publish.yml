@@ -1,0 +1,145 @@
+name: Publish to IPFS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ipfs-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    env:
+      BUILD_COMMAND: ${{ vars.BUILD_COMMAND }}
+      OUTPUT_DIR: ${{ vars.OUTPUT_DIR || '.' }}
+      PIN_NAME: ${{ vars.PIN_NAME || github.event.repository.name }}
+      KEEP_PINS: ${{ vars.KEEP_PINS || '3' }}
+      WEB3_HOST: ${{ vars.WEB3_HOST }}
+      PINATA_JWT: ${{ secrets.PINATA_JWT }}
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Ruby is needed for Jekyll sites (Gemfile present). setup-ruby caches gems.
+      - name: Setup Ruby
+        if: hashFiles('Gemfile') != ''
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      # Node is used by the build (e.g. `npx pagefind`). ubuntu-24.04 ships Node,
+      # but pin it when the repo declares one.
+      - name: Setup Node
+        if: hashFiles('package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build
+        if: env.BUILD_COMMAND != ''
+        run: bash -euo pipefail -c "$BUILD_COMMAND"
+
+      - name: Stage site
+        run: |
+          set -euo pipefail
+          SITE="$RUNNER_TEMP/site"
+          rm -rf "$SITE"
+          mkdir -p "$SITE"
+          rsync -a \
+            --exclude='.git' --exclude='.github' --exclude='node_modules' \
+            "$OUTPUT_DIR"/ "$SITE"/
+          test -f "$SITE/index.html" || { echo "index.html missing in $OUTPUT_DIR"; exit 1; }
+          bad=$(cd "$RUNNER_TEMP" && find site -type f | grep -E '[;,"]' || true)
+          if [ -n "$bad" ]; then
+            echo "Filenames containing ; , or \" are not supported:"
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: Pin to Pinata
+        id: pin
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          args=()
+          while IFS= read -r -d '' f; do
+            args+=(-F "file=@${f};filename=${f}")
+          done < <(find site -type f -print0 | sort -z)
+          meta=$(jq -nc --arg n "$PIN_NAME" --arg c "$GITHUB_SHA" \
+            '{name:$n, keyvalues:{commit:$c}}')
+          resp=$(curl -fsS --retry 3 --retry-all-errors \
+            -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
+            -H "Authorization: Bearer $PINATA_JWT" \
+            "${args[@]}" \
+            --form-string "pinataMetadata=$meta" \
+            --form-string 'pinataOptions={"cidVersion":1}')
+          cid=$(echo "$resp" | jq -r '.IpfsHash // empty')
+          [ -n "$cid" ] || { echo "Pinata error: $resp"; exit 1; }
+          echo "cid=$cid" >> "$GITHUB_OUTPUT"
+          echo "Pinned $cid"
+
+      - name: Prune old pins
+        env:
+          CID: ${{ steps.pin.outputs.cid }}
+        run: |
+          set -euo pipefail
+          list=$(curl -fsS --get "https://api.pinata.cloud/data/pinList" \
+            -H "Authorization: Bearer $PINATA_JWT" \
+            --data-urlencode "status=pinned" \
+            --data-urlencode "metadata[name]=$PIN_NAME" \
+            --data-urlencode "pageLimit=100")
+          echo "$list" | jq -r --arg cur "$CID" --argjson keep "$KEEP_PINS" '
+            [.rows[] | {h: .ipfs_pin_hash, d: .date_pinned}]
+            | unique_by(.h)
+            | sort_by(.d) | reverse
+            | map(select(.h != $cur))
+            | .[($keep - 1):][]?.h' |
+          while read -r old; do
+            [ -n "$old" ] || continue
+            echo "Unpinning $old"
+            curl -fsS -X DELETE "https://api.pinata.cloud/pinning/unpin/$old" \
+              -H "Authorization: Bearer $PINATA_JWT" || echo "Failed to unpin $old"
+          done
+
+      - name: Update Cloudflare Web3 gateway DNSLink
+        if: env.WEB3_HOST != ''
+        env:
+          CID: ${{ steps.pin.outputs.cid }}
+        run: |
+          set -euo pipefail
+          api="https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/web3/hostnames"
+          id=$(curl -fsS "$api" -H "Authorization: Bearer $CF_TOKEN" |
+            jq -r --arg h "$WEB3_HOST" '.result[] | select(.name == $h) | .id' | head -n1)
+          [ -n "$id" ] || { echo "Web3 hostname $WEB3_HOST not found in zone"; exit 1; }
+          body=$(jq -nc --arg d "/ipfs/$CID" '{dnslink:$d}')
+          resp=$(curl -fsS -X PATCH "$api/$id" \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "$body")
+          echo "$resp" | jq -e '.success == true' >/dev/null || { echo "$resp"; exit 1; }
+          echo "DNSLink for $WEB3_HOST -> /ipfs/$CID"
+
+      - name: Summary
+        env:
+          CID: ${{ steps.pin.outputs.cid }}
+        run: |
+          {
+            echo "## IPFS publish"
+            echo ""
+            echo "**CID:** \`$CID\`"
+            echo ""
+            echo "Unstoppable Domains record (IPFS / \`ipfs.html.value\`): \`$CID\`"
+            echo ""
+            echo "- https://$CID.ipfs.dweb.link/"
+            echo "- https://gateway.pinata.cloud/ipfs/$CID/"
+            if [ -n "$WEB3_HOST" ]; then echo "- https://$WEB3_HOST/"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
