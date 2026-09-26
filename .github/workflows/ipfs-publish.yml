@@ -65,6 +65,30 @@ jobs:
             exit 1
           fi
 
+      # Free-plan accounts cap total FILES (~500), and this site is ~450 files,
+      # so two full versions cannot coexist. We must unpin old versions BEFORE
+      # pinning the new one. Keep the newest (KEEP_PINS-1) so there is room for
+      # the +1 we are about to add (KEEP_PINS=1 -> unpin all, keep only the new).
+      - name: Make room on Pinata (prune before pin)
+        run: |
+          set -euo pipefail
+          list=$(curl -fsS --get "https://api.pinata.cloud/data/pinList" \
+            -H "Authorization: Bearer $PINATA_JWT" \
+            --data-urlencode "status=pinned" \
+            --data-urlencode "metadata[name]=$PIN_NAME" \
+            --data-urlencode "pageLimit=100")
+          echo "$list" | jq -r --argjson keep "$KEEP_PINS" '
+            [.rows[] | {h: .ipfs_pin_hash, d: .date_pinned}]
+            | unique_by(.h)
+            | sort_by(.d) | reverse
+            | .[($keep - 1):][]?.h' |
+          while read -r old; do
+            [ -n "$old" ] || continue
+            echo "Unpinning $old"
+            curl -fsS -X DELETE "https://api.pinata.cloud/pinning/unpin/$old" \
+              -H "Authorization: Bearer $PINATA_JWT" || echo "Failed to unpin $old"
+          done
+
       - name: Pin to Pinata
         id: pin
         run: |
@@ -76,7 +100,8 @@ jobs:
           done < <(find site -type f -print0 | sort -z)
           meta=$(jq -nc --arg n "$PIN_NAME" --arg c "$GITHUB_SHA" \
             '{name:$n, keyvalues:{commit:$c}}')
-          resp=$(curl -fsS --retry 3 --retry-all-errors \
+          # No -f: keep the JSON body so a Pinata error (e.g. pin limit) is visible.
+          resp=$(curl -sS --retry 3 \
             -X POST "https://api.pinata.cloud/pinning/pinFileToIPFS" \
             -H "Authorization: Bearer $PINATA_JWT" \
             "${args[@]}" \
@@ -86,29 +111,6 @@ jobs:
           [ -n "$cid" ] || { echo "Pinata error: $resp"; exit 1; }
           echo "cid=$cid" >> "$GITHUB_OUTPUT"
           echo "Pinned $cid"
-
-      - name: Prune old pins
-        env:
-          CID: ${{ steps.pin.outputs.cid }}
-        run: |
-          set -euo pipefail
-          list=$(curl -fsS --get "https://api.pinata.cloud/data/pinList" \
-            -H "Authorization: Bearer $PINATA_JWT" \
-            --data-urlencode "status=pinned" \
-            --data-urlencode "metadata[name]=$PIN_NAME" \
-            --data-urlencode "pageLimit=100")
-          echo "$list" | jq -r --arg cur "$CID" --argjson keep "$KEEP_PINS" '
-            [.rows[] | {h: .ipfs_pin_hash, d: .date_pinned}]
-            | unique_by(.h)
-            | sort_by(.d) | reverse
-            | map(select(.h != $cur))
-            | .[($keep - 1):][]?.h' |
-          while read -r old; do
-            [ -n "$old" ] || continue
-            echo "Unpinning $old"
-            curl -fsS -X DELETE "https://api.pinata.cloud/pinning/unpin/$old" \
-              -H "Authorization: Bearer $PINATA_JWT" || echo "Failed to unpin $old"
-          done
 
       - name: Update Cloudflare Web3 gateway DNSLink
         if: env.WEB3_HOST != ''
