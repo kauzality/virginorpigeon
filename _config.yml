@@ -92,6 +92,7 @@ sass:
 # requires _redirects at the root of the build output.
 include:
   - _redirects
+  - _headers
 
 exclude:
   - Gemfile
@@ -100,3 +101,6 @@ exclude:
   - vendor
   - SITE_AUDIT.md
   - _config.yml.bak
+  # Cloudflare Pages reads functions/ from the project root, not the build
+  # output, so keep it out of _site.
+  - functions

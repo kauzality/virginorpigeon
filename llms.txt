@@ -1,0 +1,42 @@
+# Virgin or Pigeon
+
+> Essays and practical guides on Technoshamanism, Thelema (93/93), Fifth-Generation Warfare (5GW), cyberpunk, occulture, and the philosophy of individual will. Long-form writing by an independent author at https://virginorpigeon.net.
+
+The full canonical URL list is in the sitemap. This file is a curated reading list of the most substantial pages for agents and models.
+
+## About & orientation
+
+- [About (An Homage to No Reason)](https://virginorpigeon.net/an-homage-to-no-reason/): who writes this site and why.
+- [Front page](https://virginorpigeon.net/): site landing page and latest posts.
+- [Blog index](https://virginorpigeon.net/on-technoshamanism-and-magick/): all essays on technoshamanism and magick.
+- [Duty: As Demanded by Thelema](https://virginorpigeon.net/an-homage-to-no-reason/duty-as-demanded-by-thelema/): the site's ethical/philosophical stance.
+
+## Thelema & magick (practical)
+
+- [Ruby Star Ritual: An Introduction to Banishing](https://virginorpigeon.net/ruby-star-ritual/): overview of the banishing ritual.
+- [How to Perform the Ruby Star Ritual: A Practical Guide](https://virginorpigeon.net/how-to-perform-the-ruby-star-ritual-a-practical-guide/): step-by-step performance.
+- [Preparing for the Ruby Star Ritual](https://virginorpigeon.net/preparing-for-the-ruby-star-ritual-tools-techniques-and-breathwork-for-beginners/): tools, techniques, breathwork for beginners.
+- [The Names in the Ruby Star Ritual](https://virginorpigeon.net/the-names-in-the-ruby-star-ritual-importance-and-practical-focus/): meaning and practical focus of the names.
+- [Egregore Creation by Intent](https://virginorpigeon.net/egregore-creation-by-intent-and-the-currents-that-feed-them/): creating and maintaining egregores.
+- [Love under Will](https://virginorpigeon.net/love-under-will/): core Thelemic principle.
+- [Thelemic Calendar](https://virginorpigeon.net/thelemic-calendar/): the Thelemic dating system and observances.
+
+## 5GW, influence & society
+
+- [NLP, Digital Influence, and 5GW](https://virginorpigeon.net/nlp-in-5gw/): distinguishes NLP, digital influence, and Fifth-Generation Warfare.
+- [The Calculus of Sacrifice in Russian Strategic Culture](https://virginorpigeon.net/the-russian-threat/): Russian strategic culture analysis.
+- [American Democracy: The Grotesque Grinding of Groupthink](https://virginorpigeon.net/american-democracy-the-grotesque-grinding-of-groupthink/): critique of groupthink in US politics.
+- [The Partisan Divide: Is There a Future for America?](https://virginorpigeon.net/the-partisan-divide-is-there-a-future-for-america/): analysis of partisanship.
+- [Wealth of Misconceptions: The Lost Lessons of Adam Smith](https://virginorpigeon.net/wealth-of-misconceptions/): re-reading Adam Smith.
+
+## Consciousness & practice
+
+- [Brainwave Entrainment with Hemispheric Synchronization](https://virginorpigeon.net/brainwave-entrainment-with-hemispheric-synchronization/): entrainment techniques.
+- [Therapeutic Mindfulness](https://virginorpigeon.net/therapeutic-mindfulness/): history, techniques, and benefits.
+- [Alan Watts: Life, Teachings, and Influences](https://virginorpigeon.net/the-way-of-zen-alan-watts/): the Way of Zen.
+
+## Optional
+
+- [Music Video features](https://virginorpigeon.net/music-video/): essays on Coil, Current 93, Christian Death, Ghost, and other artists.
+- [Contact](https://virginorpigeon.net/contact/): contact form.
+- [Privacy Policy](https://virginorpigeon.net/an-homage-to-no-reason/privacy-policy/): site privacy policy.

@@ -1,0 +1,14 @@
+# robots.txt for virginorpigeon.net
+#
+# Content Signals (content-signals.org / Cloudflare) tell AI systems how this
+# content may be used. yes = allowed, no = not allowed:
+#   search    = show in a search index / return as a link
+#   ai-input  = use as input to an AI answer at query time (RAG, assistants, agents)
+#   ai-train  = use to train / fine-tune AI models
+# Adjust the ai-train value below if you want to permit model training.
+
+User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+Allow: /
+
+Sitemap: https://virginorpigeon.net/sitemap.xml

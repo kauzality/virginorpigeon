@@ -1,0 +1,8 @@
+# Cloudflare Pages custom response headers.
+# https://developers.cloudflare.com/pages/configuration/headers/
+
+# Mirror the robots.txt Content Signal at the HTTP layer so AI systems see the
+# usage policy on every response, not only when they fetch robots.txt.
+# Keep this in sync with robots.txt.
+/*
+  Content-Signal: search=yes, ai-input=yes, ai-train=no
