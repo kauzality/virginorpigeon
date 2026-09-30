@@ -4,5 +4,11 @@
 # Mirror the robots.txt Content Signal at the HTTP layer so AI systems see the
 # usage policy on every response, not only when they fetch robots.txt.
 # Keep this in sync with robots.txt.
+#
+# Link header (RFC 8288) advertises machine-readable resources to agents.
+# rel="describedby" -> llms.txt is a registered relation pointing to a real
+# resource (this is a content site with no API, so api-catalog/service-doc
+# would be dishonest).
 /*
   Content-Signal: search=yes, ai-input=yes, ai-train=no
+  Link: </llms.txt>; rel="describedby"; type="text/plain"

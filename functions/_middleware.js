@@ -24,15 +24,16 @@ export async function onRequest(context) {
     // env.ASSETS.fetch goes straight to static assets (no Function recursion).
     const mdResp = await env.ASSETS.fetch(new Request(mdUrl.toString(), request));
     if (mdResp.ok) {
-      return new Response(mdResp.body, {
-        status: 200,
-        headers: {
-          "Content-Type": "text/markdown; charset=utf-8",
-          "Content-Signal": CONTENT_SIGNAL,
-          // Caches must key on Accept so HTML and Markdown don't clobber.
-          "Vary": "Accept",
-        },
-      });
+      const md = await mdResp.text();
+      const headers = {
+        "Content-Type": "text/markdown; charset=utf-8",
+        "Content-Signal": CONTENT_SIGNAL,
+        // ~4 chars/token heuristic; advertised as a hint, not an exact count.
+        "x-markdown-tokens": String(Math.ceil(md.length / 4)),
+        // Caches must key on Accept so HTML and Markdown don't clobber.
+        "Vary": "Accept",
+      };
+      return new Response(md, { status: 200, headers });
     }
     // No twin for this path -> fall through to the normal HTML response.
   }

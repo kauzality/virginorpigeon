@@ -59,6 +59,27 @@ module Jekyll
 
         site.static_files << MarkdownTwinFile.new(site, dir, "index.md", md)
       end
+
+      # Homepage twin at /index.md. The real index.html is a Liquid post-list
+      # template, so build a genuinely useful Markdown summary from site data
+      # instead: title, description, and the most recent posts.
+      home = +"# #{site.config["title"]}\n\n"
+      desc = site.config["description"].to_s
+      home << "> #{desc}\n\n" unless desc.empty?
+      home << "Homepage of #{site.config["url"]}. " \
+              "See /llms.txt for a curated reading list and " \
+              "/sitemap.xml for the full URL list.\n\n"
+      home << "## Recent posts\n\n"
+      site.posts.docs.sort_by(&:date).reverse.first(25).each do |p|
+        title = p.data["title"].to_s
+        ex = p.data["excerpt"]
+        ex = ex.is_a?(String) ? ex.gsub(/\s+/, " ").strip : ""
+        line = +"- [#{title}](#{p.url})"
+        line << " — #{ex}" unless ex.empty?
+        home << line << "\n"
+      end
+      home << "\n"
+      site.static_files << MarkdownTwinFile.new(site, "", "index.md", home)
     end
   end
 end
