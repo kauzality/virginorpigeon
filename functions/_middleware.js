@@ -30,7 +30,14 @@ export async function onRequest(context) {
         "Content-Signal": CONTENT_SIGNAL,
         // ~4 chars/token heuristic; advertised as a hint, not an exact count.
         "x-markdown-tokens": String(Math.ceil(md.length / 4)),
-        // Caches must key on Accept so HTML and Markdown don't clobber.
+        // Cloudflare's edge cache ignores `Vary: Accept`, so if a Markdown
+        // response were cached it would then be served to human browsers for
+        // the same URL. Never cache the Markdown variant: keep it out of the
+        // shared cache entirely so HTML stays the cached default for everyone.
+        // (Full agent negotiation on cached URLs still needs a Cache Rule that
+        // bypasses cache when Accept contains text/markdown — see README.)
+        "Cache-Control": "no-store",
+        "CDN-Cache-Control": "no-store",
         "Vary": "Accept",
       };
       return new Response(md, { status: 200, headers });
